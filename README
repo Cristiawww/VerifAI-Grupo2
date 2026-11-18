@@ -1,80 +1,65 @@
-Sistema Inteligente de Extracción, Análisis y Gestión de Datos
+VerifAI Scraper - Auditoría y Optimización de Perfiles de TikTok
+Aplicación móvil multiplataforma desarrollada en React Native conectada a un servidor backend en Python, diseñada para auditar integralmente perfiles públicos de TikTok, analizar su rendimiento real, evaluar su identidad comunicacional y generar recomendaciones de crecimiento y monetización.
 
-Plataforma integral diseñada para automatizar la recolección, procesamiento y estructuración de información digital mediante técnicas de web scraping e inteligencia artificial generativa.
+Equipo de Desarrollo (Integrantes):
 
-Equipo de Desarrollo (Integrantes)
+*Xavier Monteros
 
-Xavier Monteros
+*Dereck Amacoria
 
-Dereck Amacoria
+*Cristian Araujo
 
-Cristian Araujo
+*Ariel Guerrón
 
-Ariel Guerrón
+Inteligencia Artificial Utilizada para el Desarrollo: Gemini Pro
+Para el diseño, programación y estructuración técnica de todo el sistema se utilizó Gemini Pro como asistente de desarrollo impulsado por inteligencia artificial:
+
+Arquitectura y Backend: Asistencia en la estructuración del servidor en Python y en la implementación del motor de automatización con Playwright en modo Stealth para la extracción de datos públicos de TikTok.
+
+Desarrollo Frontend Móvil: Generación, depuración y optimización de la interfaz de usuario en React Native, incluyendo la navegación por pestañas, el filtrado dinámico de resultados, las barras de progreso y la consola de monitoreo en vivo.
+
+Lógica de Análisis y Psicometría: Implementación de los algoritmos de conteo de hashtags, clasificación de frecuencia de publicación y cálculo de puntajes del modelo psicométrico Big Five (OCEAN) junto con la asignación de arquetipos y afinidad comercial.
 
 Lógica de Negocio
+El sistema está diseñado para resolver la falta de diagnósticos accionables en la gestión de cuentas de TikTok, permitiendo auditar cualquier perfil público en cuatro etapas fundamentales:
 
-El sistema está diseñado bajo una arquitectura orientada a resolver el problema de la dispersión y falta de estructuración de datos públicos en plataformas web dinámicas. El flujo operativo se divide en cuatro etapas fundamentales:
+1. Extracción Automatizada de Datos (Playwright + Python)
+Objetivo: Recopilar métricas reales y actualizadas de un perfil público de TikTok sin depender de revisiones manuales.
 
-1. Ingesta y Extracción Automatizada (Web Scraping)
+Funcionamiento: Desde la aplicación en React Native, el usuario ingresa el nombre de usuario objetivo y configura los límites cuantitativos de extracción (cantidad de videos, comentarios por video, seguidores y seguidos). El servidor en Python ejecuta Playwright para capturar reproducciones, likes, porcentaje de engagement, comentarios y red de contactos, mostrando el avance en tiempo real dentro de la aplicación.
 
-Objetivo: Obtener información cruda de fuentes web de forma periódica y controlada sin intervención manual.
+2. Análisis de Frecuencia y Posicionamiento de Hashtags
+Objetivo: Medir la constancia del creador y detectar las etiquetas que impulsan su alcance.
 
-Funcionamiento: Se implementan spiders (arañas web) configuradas con reglas específicas de navegación, manejo de paginación y control de tasas de petición (rate limiting) para evitar bloqueos y respetar las políticas de acceso.
+Funcionamiento: El sistema procesa el volumen de publicaciones extraídas para categorizar automáticamente la frecuencia del perfil (Alta, Moderada o Pausada) y contabiliza todos los #hashtags presentes en la biografía, descripciones de videos y comentarios.
 
-Validación inicial: Los datos extraídos pasan por un primer filtro de limpieza donde se descartan registros duplicados, campos nulos o estructuras HTML corruptas antes de almacenarse.
+3. Perfilamiento Psicométrico (Modelo Big Five - OCEAN)
+Objetivo: Identificar la identidad comunicacional del creador y su compatibilidad con nichos comerciales.
 
-2. Procesamiento y Enriquecimiento con IA (Google Gemini)
+Funcionamiento: A partir del corpus textual recopilado (biografía, descripciones y comentarios de la audiencia), la aplicación evalúa los cinco rasgos del modelo OCEAN (Apertura, Responsabilidad, Extraversión, Amabilidad y Estabilidad Emocional). Con base en el rasgo dominante, asigna un arquetipo al creador, determina el tono general de la comunidad y calcula el porcentaje de afinidad ("fit") con distintos sectores de marcas.
 
-Objetivo: Transformar texto no estructurado, reseñas, descripciones o métricas crudas en información accionable y categorizada.
+4. Diagnóstico Ejecutivo y Plan de Mejora
+Objetivo: Traducir los datos cuantitativos y psicométricos en recomendaciones claras para optimizar la cuenta.
 
-Funcionamiento: Una vez que los datos superan la limpieza inicial, el sistema se conecta a la API de Google Gemini enviando prompts estructurados bajo reglas de negocio estrictas:
+Funcionamiento: El sistema consolida el rendimiento del perfil, su frecuencia de publicación y su perfil psicométrico para presentar un informe dividido en tres áreas clave:
 
-Clasificación y Etiquetado: Gemini analiza el contexto semántico de cada registro y le asigna categorías predefinidas.
+Diagnóstico del Perfil: Evaluación objetiva del estado actual del canal, fortalezas comunicacionales y puntos débiles.
 
-Análisis de Sentimiento e Intención: Evalúa el tono y relevancia comercial o informativa del contenido extraído.
+Estrategia de Monetización: Identificación de oportunidades comerciales y sectores de patrocinio afines al perfil y su comunidad.
 
-Normalización de Salida: Se fuerza al modelo a responder en formato JSON estricto para garantizar la compatibilidad directa con la base de datos y el frontend.
-
-3. Persistencia y Reglas de Integridad
-
-Objetivo: Garantizar la trazabilidad y consistencia histórica de la información.
-
-Funcionamiento: Cada registro procesado se almacena en una base de datos relacional vinculando la fuente original, la fecha de extracción y el análisis generado por la IA. Si un registro ya existe, el sistema ejecuta una lógica de actualización (upsert) para mantener métricas frescas sin perder el historial.
-
-4. Visualización y Toma de Decisiones (Frontend)
-
-Objetivo: Presentar los resultados de forma clara para el usuario final.
-
-Funcionamiento: La interfaz web consume los datos ya procesados mediante una API REST, permitiendo filtrar por categorías, visualizar tendencias detectadas por Gemini y exportar reportes listos para análisis ejecutivo.
-
-Inteligencia Artificial Utilizada
-
-Para el núcleo de procesamiento cognitivo del proyecto se utilizó Google Gemini:
-
-Rol en el sistema: Motor de procesamiento de lenguaje natural (NLP), clasificación semántica y estructuración de datos no uniformes.
-
-Justificación técnica: Se seleccionó Gemini por su alta capacidad de comprensión contextual en español, baja latencia en respuestas estructuradas (JSON) y facilidad de integración en flujos automatizados de backend.
-
-Control de calidad: El flujo incluye manejo de excepciones y reintentos automáticos en caso de límites de cuota o respuestas malformadas por parte del modelo, asegurando que el pipeline de datos nunca se detenga.
+Recomendación de Crecimiento: Acciones concretas sobre estrategia de contenido, frecuencia de publicación y uso de hashtags.
 
 Flujo Resumido del Sistema
 
-[Fuentes Web] 
-      |
-      v (Extracción y limpieza básica)
-[Motor de Scraping] 
-      |
-      v (Envío de texto crudo + Prompt de negocio)
-[API Google Gemini] --> (Clasificación, análisis y JSON estructurado)
-      |
-      v (Almacenamiento y validación)
-[Base de Datos] 
-      |
-      v (Consulta vía API)
-[Interfaz Frontend / Reportes]
-
+[Perfil Público de TikTok]
+       |
+       v 
+(Extracción automatizada con Playwright)
+[Servidor Backend Python]
+       |
+       v 
+(Procesamiento de métricas, hashtags y modelo OCEAN)
+[Aplicación Móvil React Native] ---> (Visualización de resultados y plan de mejora)
 
 Licencia y Uso Académico
-
-Proyecto desarrollado con fines académicos y de investigación tecnológica por el equipo de desarrollo listado en este documento.
+Proyecto desarrollado con fines académicos y de investigación tecnológica por los integrantes listados en este documento (Universidad Central del Ecuador).
