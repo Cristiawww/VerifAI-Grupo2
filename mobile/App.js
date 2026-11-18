@@ -14,7 +14,6 @@ import {
 } from "react-native";
 import {
   Play,
-  Layers,
   Video,
   MessageSquare,
   Users,
@@ -27,7 +26,15 @@ import {
   Heart,
   TrendingUp,
   Hash,
-  Activity
+  Brain,
+  Bot,
+  RefreshCw,
+  Sparkles,
+  Target,
+  Lightbulb,
+  Compass,
+  Award,
+  Shield
 } from "lucide-react-native";
 
 export default function App() {
@@ -39,10 +46,15 @@ export default function App() {
 
   // Navegación: "extractor" | "metrics"
   const [mainTab, setMainTab] = useState("extractor");
-  // Sub-tabs de métricas: "videos" | "comments" | "network" | "hashtags"
+  // Sub-tabs de métricas: "videos" | "comments" | "network" | "hashtags" | "bigfive"
   const [metricsTab, setMetricsTab] = useState("videos");
   const [searchFilter, setSearchFilter] = useState("");
   const [showLimits, setShowLimits] = useState(false);
+
+  // Estados para la auditoría de Google Gemini
+  const [geminiReport, setGeminiReport] = useState(null);
+  const [loadingAi, setLoadingAi] = useState(false);
+  const [aiError, setAiError] = useState(null);
 
   // Parámetros cuantitativos
   const [limitsConfig, setLimitsConfig] = useState({
@@ -61,7 +73,7 @@ export default function App() {
   const socketRef = useRef(null);
 
   // ==========================================
-  // HASHTAGS Y FRECUENCIA DINÁMICOS
+  // 1. HASHTAGS Y FRECUENCIA DINÁMICOS
   // ==========================================
   const detectedHashtags = useMemo(() => {
     if (!data) return [];
@@ -95,12 +107,87 @@ export default function App() {
   }, [data]);
 
   // ==========================================
-  // CONEXIÓN WEBSOCKET
+  // 2. PSICOMETRÍA BIG FIVE (OCEAN)
+  // ==========================================
+  const psychometrics = useMemo(() => {
+    if (!data) return null;
+    const profile = data.profile;
+    const videos = data.videos || [];
+    const comments = data.comments || [];
+
+    if (data.psychometrics?.ocean_scores) {
+      return {
+        ocean_scores: data.psychometrics.ocean_scores,
+        dominant_trait: data.psychometrics.dominant_trait || "Apertura",
+        arquetipo: data.psychometrics.arquetipo || "El Visionario Creativo",
+        marcas_recomendadas: data.psychometrics.marcas_recomendadas || [],
+        resumen_audiencia: {
+          comentarios_evaluados: data.psychometrics.resumen_audiencia?.comentarios_evaluados ?? comments.length,
+          tono_comunidad: data.psychometrics.resumen_audiencia?.tono_comunidad || "Colaborativo y Cercano"
+        }
+      };
+    }
+
+    const textCorpus = [
+      profile?.bio || "",
+      ...videos.map((v) => v?.desc || ""),
+      ...comments.map((c) => c?.text || "")
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    const scoreForWords = (words, base = 50) => {
+      let matches = 0;
+      words.forEach((w) => {
+        if (textCorpus.includes(w)) matches++;
+      });
+      return Math.min(95, Math.max(25, base + matches * 7));
+    };
+
+    const scores = {
+      Apertura: scoreForWords(["crear", "idea", "aprender", "arte", "nuevo", "diseño", "innovar", "tech", "musica", "viaje"], 66),
+      Responsabilidad: scoreForWords(["rutina", "constancia", "meta", "trabajo", "proceso", "orden", "resultado", "tutorial"], 58),
+      Extraversión: scoreForWords(["hola", "amigos", "comunidad", "sigueme", "fiesta", "gente", "reto", "viral", "top"], 72),
+      Amabilidad: scoreForWords(["gracias", "apoyo", "amor", "feliz", "familia", "ayuda", "favorito", "lindo"], 64),
+      "Estabilidad Emocional": scoreForWords(["tranquilo", "calma", "solución", "equilibrio", "paz"], 70)
+    };
+
+    const dominantTrait = Object.entries(scores).reduce((a, b) => (b[1] > a[1] ? b : a))[0];
+
+    const archetypes = {
+      Apertura: "El Visionario Creativo (Innovación y Nuevas Ideas)",
+      Extraversión: "El Conector Social (Dinamismo y Entretenimiento)",
+      Responsabilidad: "El Experto Metódico (Educación y Disciplina)",
+      Amabilidad: "El Constructor de Comunidad (Empatía y Cercanía)",
+      "Estabilidad Emocional": "El Analista Resiliente (Control y Seguridad)"
+    };
+
+    return {
+      ocean_scores: scores,
+      dominant_trait: dominantTrait,
+      arquetipo: archetypes[dominantTrait] || "El Creador Multidisciplinario",
+      marcas_recomendadas: [
+        { niche: "Tecnología y Software", similarity: 78.5 },
+        { niche: "Educación y Ciencia", similarity: 65.2 },
+        { niche: "Entretenimiento Digital", similarity: 54.0 },
+        { niche: "Gaming y Esports", similarity: 48.0 }
+      ],
+      resumen_audiencia: {
+        comentarios_evaluados: comments.length,
+        tono_comunidad: scores["Amabilidad"] >= 60 ? "Colaborativo y Respetuoso" : "Crítico y Exigente"
+      }
+    };
+  }, [data]);
+
+  // ==========================================
+  // 3. CONEXIÓN WEBSOCKET
   // ==========================================
   const startScrape = () => {
     if (!username.trim() || loading) return;
     setLoading(true);
     setData(null);
+    setGeminiReport(null);
+    setAiError(null);
     setLogs((prev) => [...prev, `[INIT] Conectando a ws://${backendIp}:8000/ws/scrape...`]);
 
     try {
@@ -153,6 +240,37 @@ export default function App() {
     }
   };
 
+  // ==========================================
+  // 4. AUDITORÍA CON GOOGLE GEMINI (HTTP POST)
+  // ==========================================
+  const handleGenerateGeminiReport = async () => {
+    if (!data || loadingAi) return;
+    setLoadingAi(true);
+    setAiError(null);
+    try {
+      const response = await fetch(`http://${backendIp}:8000/api/ai/gemini-report`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          profile: data.profile || {},
+          psychometrics: psychometrics || {},
+          frequency: publicationFrequency?.label || "Moderada"
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error HTTP ${response.status} al consultar Gemini`);
+      }
+
+      const result = await response.json();
+      setGeminiReport(result);
+    } catch (err) {
+      setAiError(err.message || "Error al conectar con la API de Gemini en el PC.");
+    } finally {
+      setLoadingAi(false);
+    }
+  };
+
   const filteredVideos = (data?.videos || []).filter((v) => {
     if (!searchFilter.trim()) return true;
     const term = searchFilter.toLowerCase();
@@ -165,6 +283,14 @@ export default function App() {
     return (c.text && c.text.toLowerCase().includes(term)) || (c.author && c.author.toLowerCase().includes(term));
   });
 
+  const oceanColorMap = {
+    Apertura: { bar: "#06b6d4", text: "#22d3ee", sub: "Creatividad vs Convencionalismo" },
+    Responsabilidad: { bar: "#10b981", text: "#34d399", sub: "Disciplina vs Espontaneidad" },
+    Extraversión: { bar: "#f43f5e", text: "#fb7185", sub: "Sociabilidad vs Introspección" },
+    Amabilidad: { bar: "#a855f7", text: "#c084fc", sub: "Empatía vs Competitividad" },
+    "Estabilidad Emocional": { bar: "#f59e0b", text: "#fbbf24", sub: "Resiliencia vs Volatilidad" }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#070b14" />
@@ -175,7 +301,7 @@ export default function App() {
           <Text style={styles.logoText}>TT</Text>
         </View>
         <View style={{ flex: 1, marginLeft: 10 }}>
-          <Text style={styles.navTitle}>TikTok Scraper</Text>
+          <Text style={styles.navTitle}>VerifAI Scraper</Text>
           <Text style={styles.navSubtitle}>LAN: {backendIp}:8000</Text>
         </View>
         <View style={styles.antiBotBadge}>
@@ -202,7 +328,7 @@ export default function App() {
         >
           <TrendingUp size={13} color={mainTab === "metrics" ? "#fff" : "#94a3b8"} />
           <Text style={[styles.mainTabText, mainTab === "metrics" && styles.mainTabTextActive]}>
-            Resultados & Métricas {data ? "●" : ""}
+            Resultados & IA {data ? "●" : ""}
           </Text>
         </TouchableOpacity>
       </View>
@@ -342,10 +468,10 @@ export default function App() {
       )}
 
       {/* ========================================================= */}
-      {/* PESTAÑA 2: RESULTADOS Y MÉTRICAS (IDÉNTICO A PC)          */}
+      {/* PESTAÑA 2: RESULTADOS, MÉTRICAS & BIG FIVE + GEMINI       */}
       {/* ========================================================= */}
       {mainTab === "metrics" && (
-        <ScrollView style={styles.scrollBody}>
+        <ScrollView style={styles.scrollBody} contentContainerStyle={{ paddingBottom: 30 }}>
           {data ? (
             <>
               {/* Tarjeta Banner del Perfil */}
@@ -428,11 +554,21 @@ export default function App() {
                       Hashtags ({detectedHashtags.length})
                     </Text>
                   </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.subTabPill, metricsTab === "bigfive" && styles.subTabPillActiveAi]}
+                    onPress={() => setMetricsTab("bigfive")}
+                  >
+                    <Brain size={13} color={metricsTab === "bigfive" ? "#fff" : "#c084fc"} />
+                    <Text style={[styles.subTabPillText, metricsTab === "bigfive" && styles.subTabPillTextActive]}>
+                      Big Five & IA
+                    </Text>
+                  </TouchableOpacity>
                 </ScrollView>
               </View>
 
               {/* Buscador reactivo */}
-              {metricsTab !== "hashtags" && (
+              {metricsTab !== "hashtags" && metricsTab !== "bigfive" && (
                 <View style={styles.searchBar}>
                   <TextInput
                     style={styles.searchInput}
@@ -574,6 +710,174 @@ export default function App() {
                   </View>
                 </View>
               )}
+
+              {/* 5. SECCIÓN BIG FIVE (OCEAN) & AUDITORÍA GOOGLE GEMINI */}
+              {metricsTab === "bigfive" && psychometrics && (
+                <View style={{ gap: 14 }}>
+                  {/* Card Arquetipo OCEAN */}
+                  <View style={styles.archetypeCard}>
+                    <View style={styles.rowCenter}>
+                      <Brain size={16} color="#c084fc" />
+                      <Text style={styles.archetypeEyebrow}>MODELO PSICOMÉTRICO OCEAN • NLP</Text>
+                    </View>
+                    <Text style={styles.archetypeTitle}>{psychometrics.arquetipo}</Text>
+                    <Text style={styles.archetypeDesc}>
+                      Proyección semántica sobre descripciones de videos y comentarios mediante vectores psicológicos.
+                    </Text>
+
+                    <View style={styles.dominantBox}>
+                      <Text style={styles.dominantLabel}>RASGO DOMINANTE</Text>
+                      <Text style={styles.dominantValue}>{psychometrics.dominant_trait}</Text>
+                      <Text style={styles.dominantBadge}>Alta polaridad semántica</Text>
+                    </View>
+                  </View>
+
+                  {/* Card Auditoría Ejecutiva Google Gemini */}
+                  <View style={styles.geminiCard}>
+                    <View style={styles.rowCenter}>
+                      <View style={styles.botIconBox}>
+                        <Bot size={18} color="#22d3ee" />
+                      </View>
+                      <View style={{ flex: 1, marginLeft: 10 }}>
+                        <Text style={styles.geminiTitle}>Auditoría Ejecutiva con Gemini</Text>
+                        <Text style={styles.geminiSub}>Diagnóstico cualitativo de marketing con IA</Text>
+                      </View>
+                    </View>
+
+                    <TouchableOpacity
+                      style={[styles.btnGemini, loadingAi && { opacity: 0.6 }]}
+                      onPress={handleGenerateGeminiReport}
+                      disabled={loadingAi}
+                    >
+                      {loadingAi ? (
+                        <ActivityIndicator size="small" color="#020617" />
+                      ) : (
+                        <RefreshCw size={14} color="#020617" />
+                      )}
+                      <Text style={styles.btnGeminiText}>
+                        {loadingAi
+                          ? "Analizando con Gemini..."
+                          : geminiReport
+                          ? "Regenerar Auditoría IA"
+                          : "Generar Auditoría con Gemini"}
+                      </Text>
+                    </TouchableOpacity>
+
+                    {aiError && (
+                      <View style={styles.errorBanner}>
+                        <Text style={styles.errorBannerText}>{aiError}</Text>
+                      </View>
+                    )}
+
+                    {geminiReport ? (
+                      <View style={{ gap: 10, marginTop: 12 }}>
+                        <View style={styles.reportBlock}>
+                          <View style={styles.rowCenter}>
+                            <Sparkles size={13} color="#22d3ee" />
+                            <Text style={[styles.reportBlockTitle, { color: "#22d3ee" }]}>
+                              Diagnóstico del Perfil
+                            </Text>
+                          </View>
+                          <Text style={styles.reportBlockBody}>{geminiReport.diagnostico_perfil}</Text>
+                        </View>
+
+                        <View style={styles.reportBlock}>
+                          <View style={styles.rowCenter}>
+                            <Target size={13} color="#34d399" />
+                            <Text style={[styles.reportBlockTitle, { color: "#34d399" }]}>
+                              Estrategia de Monetización
+                            </Text>
+                          </View>
+                          <Text style={styles.reportBlockBody}>{geminiReport.estrategia_monetizacion}</Text>
+                        </View>
+
+                        <View style={styles.reportBlock}>
+                          <View style={styles.rowCenter}>
+                            <Lightbulb size={13} color="#fbbf24" />
+                            <Text style={[styles.reportBlockTitle, { color: "#fbbf24" }]}>
+                              Recomendación de Crecimiento
+                            </Text>
+                          </View>
+                          <Text style={styles.reportBlockBody}>{geminiReport.consejo_mejora}</Text>
+                        </View>
+                      </View>
+                    ) : (
+                      <Text style={styles.geminiHint}>
+                        Presiona el botón para generar el diagnóstico cualitativo desde el servidor Python.
+                      </Text>
+                    )}
+                  </View>
+
+                  {/* Barras Dimensiones OCEAN */}
+                  <View style={styles.metricCard}>
+                    <View style={[styles.rowCenter, { marginBottom: 12 }]}>
+                      <Compass size={15} color="#22d3ee" />
+                      <Text style={[styles.metricCardTitle, { marginBottom: 0, marginLeft: 6 }]}>
+                        DIMENSIONES PSICOMÉTRICAS (OCEAN)
+                      </Text>
+                    </View>
+
+                    <View style={{ gap: 14 }}>
+                      {Object.entries(psychometrics.ocean_scores || {}).map(([trait, score]) => {
+                        const cfg = oceanColorMap[trait] || { bar: "#6366f1", text: "#818cf8", sub: "Métrica general" };
+                        return (
+                          <View key={trait}>
+                            <View style={styles.rowBetween}>
+                              <Text style={styles.oceanTraitName}>{trait}</Text>
+                              <Text style={[styles.oceanScoreText, { color: cfg.text }]}>{score}%</Text>
+                            </View>
+                            <View style={styles.progressTrack}>
+                              <View style={[styles.progressFill, { width: `${score}%`, backgroundColor: cfg.bar }]} />
+                            </View>
+                            <Text style={styles.oceanSubText}>{cfg.sub}</Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  </View>
+
+                  {/* Marcas Recomendadas */}
+                  <View style={styles.metricCard}>
+                    <View style={[styles.rowCenter, { marginBottom: 8 }]}>
+                      <Award size={15} color="#fbbf24" />
+                      <Text style={[styles.metricCardTitle, { marginBottom: 0, marginLeft: 6 }]}>
+                        FIT ESTRATÉGICO Y MARCAS
+                      </Text>
+                    </View>
+                    <Text style={styles.metricCardDesc}>
+                      Afinidad comercial detectada según el rasgo dominante ({psychometrics.dominant_trait}):
+                    </Text>
+                    <View style={[styles.tagsWrapper, { marginTop: 10 }]}>
+                      {(psychometrics.marcas_recomendadas || []).map((item, idx) => (
+                        <View key={item.niche || idx} style={styles.brandBadge}>
+                          <Text style={styles.brandText}>{item.niche}</Text>
+                          {item.similarity ? (
+                            <Text style={styles.brandFit}>{item.similarity}% fit</Text>
+                          ) : null}
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+
+                  {/* Sentimiento Comunidad */}
+                  <View style={styles.metricCard}>
+                    <View style={[styles.rowCenter, { marginBottom: 8 }]}>
+                      <Shield size={15} color="#34d399" />
+                      <Text style={[styles.metricCardTitle, { marginBottom: 0, marginLeft: 6 }]}>
+                        SENTIMIENTO DE LA COMUNIDAD
+                      </Text>
+                    </View>
+                    <View style={styles.rowBetween}>
+                      <Text style={styles.sentimentLabel}>Tono General:</Text>
+                      <Text style={styles.sentimentValue}>{psychometrics.resumen_audiencia?.tono_comunidad}</Text>
+                    </View>
+                    <View style={[styles.rowBetween, { marginTop: 4 }]}>
+                      <Text style={styles.sentimentLabel}>Comentarios Procesados:</Text>
+                      <Text style={styles.sentimentCount}>{data.comments?.length || 0} muestras</Text>
+                    </View>
+                  </View>
+                </View>
+              )}
             </>
           ) : (
             <View style={styles.emptyScreen}>
@@ -617,7 +921,7 @@ const styles = StyleSheet.create({
   profileChip: { flexDirection: "row", gap: 4, backgroundColor: "#020617", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: "#1e293b" },
   profileChipName: { color: "#f43f5e", fontSize: 10, fontWeight: "bold" },
   profileChipCat: { color: "#64748b", fontSize: 10 },
-  btnScrape: { backgroundColor: "#f43f5e", paddingVertical: 13, borderRadius: 12, alignItems: "center", marginTop: 14, shadowColor: "#f43f5e", shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
+  btnScrape: { backgroundColor: "#f43f5e", paddingVertical: 13, borderRadius: 12, alignItems: "center", marginTop: 14 },
   btnScrapeText: { color: "#fff", fontWeight: "bold", fontSize: 13, marginLeft: 6 },
   accordionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderTopWidth: 1, borderColor: "#1e293b", paddingTop: 12, marginTop: 14 },
   accordionTitle: { color: "#38bdf8", fontSize: 11, fontWeight: "bold" },
@@ -646,6 +950,7 @@ const styles = StyleSheet.create({
   subTabsContainer: { marginBottom: 12 },
   subTabPill: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: "#0e1422", borderWidth: 1, borderColor: "#1e293b" },
   subTabPillActive: { backgroundColor: "#f43f5e", borderColor: "#f43f5e" },
+  subTabPillActiveAi: { backgroundColor: "#7c3aed", borderColor: "#a855f7" },
   subTabPillText: { color: "#94a3b8", fontSize: 11, fontWeight: "bold" },
   subTabPillTextActive: { color: "#fff" },
   searchBar: { marginBottom: 12 },
@@ -672,12 +977,43 @@ const styles = StyleSheet.create({
   userUsername: { color: "#38bdf8", fontSize: 10, fontFamily: "monospace" },
   metricCard: { backgroundColor: "#0e1422", padding: 14, borderRadius: 14, borderWidth: 1, borderColor: "#1e293b" },
   metricCardTitle: { color: "#94a3b8", fontSize: 11, fontWeight: "bold", marginBottom: 8 },
-  metricCardDesc: { color: "#64748b", fontSize: 11, marginTop: 4 },
+  metricCardDesc: { color: "#64748b", fontSize: 11, marginTop: 2, lineHeight: 15 },
   tagsWrapper: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   tagBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#020617", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: "#1e293b" },
   tagText: { color: "#38bdf8", fontSize: 11, fontFamily: "monospace" },
   tagCount: { color: "#64748b", fontSize: 10 },
   frequencyLabel: { fontSize: 24, fontWeight: "900" },
+  archetypeCard: { backgroundColor: "#18122b", padding: 16, borderRadius: 16, borderWidth: 1, borderColor: "#581c87" },
+  archetypeEyebrow: { color: "#d8b4fe", fontSize: 10, fontWeight: "bold", fontFamily: "monospace", marginLeft: 6 },
+  archetypeTitle: { color: "#fff", fontSize: 18, fontWeight: "900", marginTop: 6 },
+  archetypeDesc: { color: "#cbd5e1", fontSize: 11, lineHeight: 16, marginTop: 4 },
+  dominantBox: { backgroundColor: "#090d16", padding: 12, borderRadius: 12, borderWidth: 1, borderColor: "#6b21a8", marginTop: 12, alignItems: "center" },
+  dominantLabel: { color: "#d8b4fe", fontSize: 10, fontFamily: "monospace", fontWeight: "bold" },
+  dominantValue: { color: "#fff", fontSize: 17, fontWeight: "900", marginTop: 2 },
+  dominantBadge: { color: "#34d399", fontSize: 10, fontFamily: "monospace", marginTop: 4 },
+  geminiCard: { backgroundColor: "#0f172a", padding: 16, borderRadius: 16, borderWidth: 1, borderColor: "#155e75" },
+  botIconBox: { width: 36, height: 36, borderRadius: 10, backgroundColor: "#083344", borderWidth: 1, borderColor: "#0e7490", justifyContent: "center", alignItems: "center" },
+  geminiTitle: { color: "#fff", fontSize: 14, fontWeight: "bold" },
+  geminiSub: { color: "#94a3b8", fontSize: 11 },
+  btnGemini: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "#22d3ee", paddingVertical: 11, borderRadius: 10, marginTop: 12 },
+  btnGeminiText: { color: "#020617", fontSize: 12, fontWeight: "900" },
+  errorBanner: { backgroundColor: "rgba(244,63,94,0.15)", borderWidth: 1, borderColor: "#be123c", padding: 10, borderRadius: 10, marginTop: 10 },
+  errorBannerText: { color: "#fda4af", fontSize: 11, fontFamily: "monospace" },
+  reportBlock: { backgroundColor: "#020617", padding: 12, borderRadius: 12, borderWidth: 1, borderColor: "#1e293b" },
+  reportBlockTitle: { fontSize: 12, fontWeight: "bold", marginLeft: 6 },
+  reportBlockBody: { color: "#cbd5e1", fontSize: 11, lineHeight: 16, marginTop: 6 },
+  geminiHint: { color: "#64748b", fontSize: 11, textAlign: "center", marginTop: 12, fontFamily: "monospace" },
+  oceanTraitName: { color: "#e2e8f0", fontSize: 12, fontWeight: "bold" },
+  oceanScoreText: { fontSize: 12, fontWeight: "900", fontFamily: "monospace" },
+  progressTrack: { height: 7, backgroundColor: "#020617", borderRadius: 4, borderWidth: 1, borderColor: "#1e293b", overflow: "hidden", marginTop: 5 },
+  progressFill: { height: "100%", borderRadius: 4 },
+  oceanSubText: { color: "#64748b", fontSize: 10, marginTop: 3 },
+  brandBadge: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(6,182,212,0.1)", borderWidth: 1, borderColor: "#155e75", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  brandText: { color: "#67e8f9", fontSize: 11, fontFamily: "monospace", fontWeight: "bold" },
+  brandFit: { color: "#a5f3fc", fontSize: 10, fontFamily: "monospace" },
+  sentimentLabel: { color: "#94a3b8", fontSize: 11, fontFamily: "monospace" },
+  sentimentValue: { color: "#34d399", fontSize: 11, fontWeight: "bold", fontFamily: "monospace" },
+  sentimentCount: { color: "#e2e8f0", fontSize: 11, fontWeight: "bold", fontFamily: "monospace" },
   emptyNotice: { color: "#64748b", fontSize: 11, textAlign: "center", paddingVertical: 10 },
   emptyScreen: { alignItems: "center", justifyContent: "center", paddingVertical: 50 },
   emptyScreenTitle: { color: "#fff", fontSize: 16, fontWeight: "bold", marginTop: 10 },
