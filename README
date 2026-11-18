@@ -1,0 +1,80 @@
+Sistema Inteligente de Extracción, Análisis y Gestión de Datos
+
+Plataforma integral diseñada para automatizar la recolección, procesamiento y estructuración de información digital mediante técnicas de web scraping e inteligencia artificial generativa.
+
+Equipo de Desarrollo (Integrantes)
+
+Xavier Monteros
+
+Dereck Amacoria
+
+Cristian Araujo
+
+Ariel Guerrón
+
+Lógica de Negocio
+
+El sistema está diseñado bajo una arquitectura orientada a resolver el problema de la dispersión y falta de estructuración de datos públicos en plataformas web dinámicas. El flujo operativo se divide en cuatro etapas fundamentales:
+
+1. Ingesta y Extracción Automatizada (Web Scraping)
+
+Objetivo: Obtener información cruda de fuentes web de forma periódica y controlada sin intervención manual.
+
+Funcionamiento: Se implementan spiders (arañas web) configuradas con reglas específicas de navegación, manejo de paginación y control de tasas de petición (rate limiting) para evitar bloqueos y respetar las políticas de acceso.
+
+Validación inicial: Los datos extraídos pasan por un primer filtro de limpieza donde se descartan registros duplicados, campos nulos o estructuras HTML corruptas antes de almacenarse.
+
+2. Procesamiento y Enriquecimiento con IA (Google Gemini)
+
+Objetivo: Transformar texto no estructurado, reseñas, descripciones o métricas crudas en información accionable y categorizada.
+
+Funcionamiento: Una vez que los datos superan la limpieza inicial, el sistema se conecta a la API de Google Gemini enviando prompts estructurados bajo reglas de negocio estrictas:
+
+Clasificación y Etiquetado: Gemini analiza el contexto semántico de cada registro y le asigna categorías predefinidas.
+
+Análisis de Sentimiento e Intención: Evalúa el tono y relevancia comercial o informativa del contenido extraído.
+
+Normalización de Salida: Se fuerza al modelo a responder en formato JSON estricto para garantizar la compatibilidad directa con la base de datos y el frontend.
+
+3. Persistencia y Reglas de Integridad
+
+Objetivo: Garantizar la trazabilidad y consistencia histórica de la información.
+
+Funcionamiento: Cada registro procesado se almacena en una base de datos relacional vinculando la fuente original, la fecha de extracción y el análisis generado por la IA. Si un registro ya existe, el sistema ejecuta una lógica de actualización (upsert) para mantener métricas frescas sin perder el historial.
+
+4. Visualización y Toma de Decisiones (Frontend)
+
+Objetivo: Presentar los resultados de forma clara para el usuario final.
+
+Funcionamiento: La interfaz web consume los datos ya procesados mediante una API REST, permitiendo filtrar por categorías, visualizar tendencias detectadas por Gemini y exportar reportes listos para análisis ejecutivo.
+
+Inteligencia Artificial Utilizada
+
+Para el núcleo de procesamiento cognitivo del proyecto se utilizó Google Gemini:
+
+Rol en el sistema: Motor de procesamiento de lenguaje natural (NLP), clasificación semántica y estructuración de datos no uniformes.
+
+Justificación técnica: Se seleccionó Gemini por su alta capacidad de comprensión contextual en español, baja latencia en respuestas estructuradas (JSON) y facilidad de integración en flujos automatizados de backend.
+
+Control de calidad: El flujo incluye manejo de excepciones y reintentos automáticos en caso de límites de cuota o respuestas malformadas por parte del modelo, asegurando que el pipeline de datos nunca se detenga.
+
+Flujo Resumido del Sistema
+
+[Fuentes Web] 
+      |
+      v (Extracción y limpieza básica)
+[Motor de Scraping] 
+      |
+      v (Envío de texto crudo + Prompt de negocio)
+[API Google Gemini] --> (Clasificación, análisis y JSON estructurado)
+      |
+      v (Almacenamiento y validación)
+[Base de Datos] 
+      |
+      v (Consulta vía API)
+[Interfaz Frontend / Reportes]
+
+
+Licencia y Uso Académico
+
+Proyecto desarrollado con fines académicos y de investigación tecnológica por el equipo de desarrollo listado en este documento.
