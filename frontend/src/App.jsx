@@ -19,12 +19,22 @@ export default function App() {
     { id: 0, time: new Date().toLocaleTimeString(), message: "[READY] Interfaz lista." }
   ]);
   const [scrapedData, setScrapedData] = useState(null);
+  const [backendStatus, setBackendStatus] = useState("checking");
+  const [backendCheck, setBackendCheck] = useState(0);
 
   useEffect(() => {
-    fetchSystemInfo().then((info) => {
-      if (info?.local_ip) setLanIp(info.local_ip);
-    });
-  }, []);
+    let active = true;
+    fetchSystemInfo()
+      .then((info) => {
+        if (!active) return;
+        if (info?.local_ip) setLanIp(info.local_ip);
+        setBackendStatus("online");
+      })
+      .catch(() => {
+        if (active) setBackendStatus("offline");
+      });
+    return () => { active = false; };
+  }, [backendCheck]);
 
   const createLog = (message) => ({
     id: ++logId.current,
@@ -72,6 +82,11 @@ export default function App() {
         <Navbar
           lanIp={lanIp}
           lanPort={lanPort}
+          backendStatus={backendStatus}
+          onCheckBackend={() => {
+            setBackendStatus("checking");
+            setBackendCheck((prev) => prev + 1);
+          }}
           onOpenMobile={() => setActiveTab("lan")}
         />
 

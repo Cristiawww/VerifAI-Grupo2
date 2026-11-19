@@ -7,6 +7,7 @@ import {
   Bot, RefreshCw, Lightbulb, Target, CheckCheck
 } from "lucide-react";
 import StatsCards from "../components/StatsCards";
+import { generateGeminiReport } from "../services/api";
 
 export default function MetricsPage({ data }) {
   const [internalTab, setInternalTab] = useState("videos");
@@ -162,27 +163,20 @@ export default function MetricsPage({ data }) {
   // 4. FUNCIÓN PARA DISPARAR GEMINI AUDIT
   // ==========================================
   const handleGenerateGeminiReport = async () => {
+    if (loadingAi) return;
     setLoadingAi(true);
     setAiError(null);
+    setGeminiReport(null);
+
     try {
-      const response = await fetch("http://localhost:8000/api/ai/gemini-report", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          profile: profile || {},
-          psychometrics: psychometrics || {},
-          frequency: publicationFrequency?.label || "Moderada"
-        })
+      const result = await generateGeminiReport({
+        profile: profile || {},
+        psychometrics: psychometrics || {},
+        frequency: publicationFrequency?.label || "Moderada"
       });
-
-      if (!response.ok) {
-        throw new Error("No se pudo obtener la respuesta del servidor");
-      }
-
-      const result = await response.json();
       setGeminiReport(result);
     } catch (err) {
-      setAiError(err.message || "Error al conectar con la API de Gemini");
+      setAiError(err.message || "Error al conectar con Gemini");
     } finally {
       setLoadingAi(false);
     }
