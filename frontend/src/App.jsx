@@ -1,6 +1,6 @@
 
 
-import React, { useState, useEffect, lazy, Suspense } from "react";
+import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { Play, Radio, BarChart3 } from "lucide-react";
 import Navbar from "./components/Navbar";
 import ExtractorPage from "./pages/ExtractorPage";
@@ -14,7 +14,10 @@ export default function App() {
   const [lanIp, setLanIp] = useState("192.168.1.15");
   const [lanPort, setLanPort] = useState("5173");
   const [loading, setLoading] = useState(false);
-  const [logs, setLogs] = useState(["[READY] Interfaz conectada y lista."]);
+  const logId = useRef(0);
+  const [logs, setLogs] = useState(() => [
+    { id: 0, time: new Date().toLocaleTimeString(), message: "[READY] Interfaz lista." }
+  ]);
   const [scrapedData, setScrapedData] = useState(null);
 
   useEffect(() => {
@@ -23,29 +26,41 @@ export default function App() {
     });
   }, []);
 
+  const createLog = (message) => ({
+    id: ++logId.current,
+    time: new Date().toLocaleTimeString(),
+    message
+  });
+
+  const appendLog = (message) => {
+    const entry = createLog(message);
+    setLogs((prev) => [...prev, entry].slice(-200));
+  };
+
   const handleClearLogs = () => {
-    setLogs(["[READY] Registro de consola reiniciado."]);
+    setLogs([createLog("[READY] Registro de consola reiniciado.")]);
   };
 
   const handleStartScrape = (username, target, limitsConfig = {}) => {
     setLoading(true);
-    setLogs((prev) => [
-      ...prev,
-      `[INIT] Iniciando extracción para @${username} (${target})...`,
+    appendLog(
+      `[INIT] Iniciando extracción para @${username} (${target})...`
+    );
+    appendLog(
       `[CONFIG] Límites: ${limitsConfig.max_videos || 19} videos, ${limitsConfig.max_comment_videos || 2} para comentarios, ${limitsConfig.max_following || 20} seguidos, ${limitsConfig.max_followers || 20} seguidores.`
-    ]);
+    );
 
     connectScraperSocket({
       username,
       target,
       ...limitsConfig,
-      onLog: (msg) => setLogs((prev) => [...prev, msg]),
+      onLog: appendLog,
       onResult: (data) => {
         setScrapedData(data);
         setLoading(false);
       },
       onError: (err) => {
-        setLogs((prev) => [...prev, `[ERROR] ${err}`]);
+        appendLog(`[ERROR] ${err}`);
         setLoading(false);
       }
     });
