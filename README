@@ -85,6 +85,106 @@ flowchart LR
 | Perfilamiento psicometrico | Determinar dimensiones OCEAN, arquetipo y afinidad comercial |
 | Auditoria ejecutiva | Sintetizar resultados en diagnostico, monetizacion y crecimiento |
 
+### Aplicacion de Domain-Driven Design
+
+VerifAI aplica los principios de Domain-Driven Design (DDD) para separar las reglas del negocio de la extraccion tecnica, los modelos de inteligencia artificial y la presentacion de la interfaz.
+
+#### 1. Dominio
+
+El dominio del proyecto no es TikTok ni Playwright; es la **auditoria inteligente de perfiles de creadores**. Las decisiones centrales son:
+
+- Extraer un conjunto limitado de datos publicos.
+- Interpretar el alcance y la actividad del perfil.
+- Clasificar sus rasgos psicometricos y nichos comerciales.
+- Convertir esas conclusiones en una recomendacion estrategica.
+
+Esta separacion permite que Playwright pueda cambiar sin modificar los calculos OCEAN ni el reporte ejecutivo.
+
+#### 2. Lenguaje ubicuo
+
+Se utiliza el mismo vocabulario en el backend, la API y las interfaces. Ejemplos usados directamente en el proyecto:
+
+| Termino | Significado dentro del dominio |
+| --- | --- |
+| `ProfileSnapshot` | Informacion y metricas publicas recopiladas de un perfil |
+| `engagement` | Indicador de la relacion entre interacciones y alcance |
+| `PublicationFrequency` | Clasificacion como Alta, Moderada, Pausada o Sin Datos |
+| `OceanScores` | Puntajes normalizados de los cinco rasgos Big Five |
+| `CreatorArchetype` | Arquetipo derivado del rasgo dominante |
+| `BrandFit` | Afinidad porcentual del creador con un nicho comercial |
+| `ExecutiveAuditReport` | Diagnostico, estrategia de monetizacion y consejo de mejora |
+
+El nombre de estos conceptos coincide con sus rutas, servicios, variables y vistas; por ejemplo, `analyze_big_five_endpoint`, `BigFiveEmbeddingService`, `psychometrics` y `GeminiAuditService`.
+
+#### 3. Contextos delimitados
+
+Cada contexto tiene responsabilidades y modelos independientes:
+
+| Contexto delimitado | Implementacion en VerifAI |
+| --- | --- |
+| `ScrapingContext` | `TikTokScraperService` captura perfiles, videos, comentarios y relaciones publicas |
+| `MetricsContext` | El backend y las vistas web/moviles calculan engagement, frecuencia y hashtags |
+| `PsychometricsContext` | `BigFiveEmbeddingService` vectoriza el contenido y determina OCEAN y Brand Fit |
+| `AdvisoryContext` | `GeminiAuditService` transforma las metricas y rasgos en un reporte ejecutivo |
+
+Los limites se comunican mediante estructuras de datos JSON. Asi, `PsychometricsContext` consume los resultados extraidos sin conocer Playwright y `AdvisoryContext` consume `psychometrics` sin conocer el proceso de embeddings.
+
+#### 4. Entidades
+
+Las entidades tienen identidad propia dentro del flujo:
+
+- **Perfil objetivo:** identificado por el `username`; conserva biografia, seguidores, likes y conteo de videos.
+- **Video:** identificado por `vid_id`; contiene vistas, likes, comentarios, compartidos y descripcion.
+- **Comentario:** identificado por su identificador y asociado al video analizado.
+- **Reporte ejecutivo:** construido para un perfil y una auditoria concretas.
+
+Estas entidades aparecen en los resultados devueltos por FastAPI y se utilizan en las vistas web y movil.
+
+#### 5. Objetos de valor
+
+Los datos que representan una medicion o configuracion se tratan como objetos de valor:
+
+- `ExtractionLimits`: cantidades de videos, comentarios, seguidos y seguidores a consultar.
+- `EngagementRate`: relacion calculada entre interacciones y alcance.
+- `OceanScores`: conjunto de cinco porcentajes normalizados.
+- `PublicationFrequency`: etiqueta, color y descripcion asociada al volumen publicado.
+- `BrandFit`: nicho comercial y porcentaje de similitud.
+
+Al viajar como datos estructurados entre frontend y backend, estos valores permiten que los servicios reciban entradas consistentes sin duplicar las reglas de interpretacion.
+
+#### 6. Servicios de dominio
+
+La logica de negocio que no pertenece a una sola entidad se implementa en servicios:
+
+- `TikTokScraperService`: coordina la navegacion, interceptacion y transformacion de datos publicos.
+- `BigFiveEmbeddingService`: contiene los anclajes Big Five, calcula vectores y determina arquetipos y nichos.
+- `GeminiAuditService`: recibe el perfil, psicometria y frecuencia para construir el diagnostico ejecutivo.
+
+Los servicios encapsulan algoritmos complejos y mantienen `main.py` enfocado en recibir peticiones, coordinar el flujo y devolver respuestas.
+
+#### 7. Aplicacion y contratos
+
+FastAPI actúa como capa de aplicacion. Expone casos de uso como:
+
+- `/api/scrape`: coordina extraccion y perfilamiento.
+- `/api/analyze/big-five`: recalcula el perfil psicometrico.
+- `/api/ai/gemini-report`: solicita el informe ejecutivo.
+- `/ws/scrape`: notifica el progreso y entrega el resultado final.
+
+Los modelos `ScrapeRequest`, `BigFiveRequest` y `GeminiReportRequest` funcionan como contratos de entrada. De este modo, la interfaz no necesita ejecutar Playwright, embeddings ni Gemini directamente.
+
+#### 8. Eventos y comunicacion
+
+El WebSocket `/ws/scrape` representa la comunicacion del flujo en tiempo de ejecucion. Emite mensajes de progreso como inicio, configuracion, fases de extraccion, vectorizacion y arquetipo detectado.
+
+Cuando termina, publica un resultado de tipo `result` con los datos de perfil, videos, comentarios, red y psicometria. Este mecanismo mantiene acoplada la actualizacion de estado solo a la interfaz, sin mezclarla con la logica del dominio.
+
+#### 9. Reglas actuales y alcance de persistencia
+
+VerifAI utiliza una adaptacion practica de DDD; no exige una base de datos ni una capa de repositorios. Los resultados se procesan en memoria y se devuelven a los clientes. Por esta razon, el proyecto aplica especialmente los contextos delimitados, el lenguaje ubicuo, entidades y objetos de valor conceptuales, servicios de dominio y separacion de casos de uso.
+
+La persistencia puede incorporarse posteriormente mediante repositorios sin alterar los servicios de analisis, siempre que las interfaces mantengan los conceptos de perfil, video, comentario y reporte definidos por el dominio.
+
 ## Tecnologias
 
 | Capa | Tecnologias |
