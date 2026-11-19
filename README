@@ -1,118 +1,189 @@
-# VerifAI Scraper — Auditoría y Optimización de Perfiles de TikTok
+# VerifAI Scraper
 
-Aplicación móvil multiplataforma desarrollada en **React Native** conectada a un servidor backend en **Python**, diseñada para auditar integralmente perfiles públicos de TikTok, analizar su rendimiento real, evaluar su identidad comunicacional y generar recomendaciones de crecimiento y monetización.
+<div align="center">
 
-**Institución:** Universidad Central del Ecuador (UCE) — Facultad de Ingeniería y Ciencias Aplicadas (FICA)
+![Estado](https://img.shields.io/badge/Estado-En%20desarrollo-38bdf8)
+![Frontend](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
+![Mobile](https://img.shields.io/badge/React%20Native-Expo-000020?logo=expo&logoColor=white)
+![Backend](https://img.shields.io/badge/FastAPI-Python-009688?logo=fastapi&logoColor=white)
+![IA](https://img.shields.io/badge/Google-Gemini-4285F4?logo=google&logoColor=white)
 
-link del Figma: https://www.figma.com/design/Dsw33LMM9VgIUnBDyn5KnZ/Untitled?node-id=0-1&t=4OPVBBl5ebxaW8dP-1
-link de Netlify: https://vocal-naiad-d26a24.netlify.app/
+**Auditoria inteligente de perfiles publicos de TikTok**
 
-## Equipo de Desarrollo (Integrantes)
+Extrae metricas publicas, analiza el rendimiento del contenido, perfilamiento psicometrico Big Five y genera recomendaciones accionables de crecimiento y monetizacion.
 
-* Xavier Monteros
-* Dereck Amacoria
-* Cristian Araujo
-* Ariel Guerrón
+[Demo web](https://vocal-naiad-d26a24.netlify.app/) · [Diseno en Figma](https://www.figma.com/design/Dsw33LMM9VgIUnBDyn5KnZ/Untitled?node-id=0-1&t=4OPVBBl5ebxaW8dP-1)
+
+</div>
 
 ---
 
-## Inteligencia Artificial Utilizada para el Desarrollo: Gemini Pro
+## Problema que resuelve
 
-Para el diseño, programación, depuración y estructuración técnica de todo el sistema se utilizó **Gemini Pro** como asistente principal de ingeniería de software impulsado por inteligencia artificial:
+Los creadores de contenido y analistas de marketing suelen evaluar perfiles de TikTok mediante metricas aisladas, como el numero de seguidores, o mediante revisiones manuales del contenido. Esta forma de analisis dificulta comprender el engagement real, la consistencia de publicaciones, la identidad comunicacional del creador y su afinidad con sectores comerciales.
 
-* **Arquitectura y Backend:** Asistencia en el diseño bajo **Domain-Driven Design (DDD)**, estructuración del servidor en **Python (FastAPI)** y la implementación del motor de automatización con **Playwright en modo Stealth** para la extracción de datos públicos de TikTok.
-* **Desarrollo Frontend Móvil:** Generación, depuración y optimización de la interfaz de usuario en **React Native (Expo)** aplicando **Atomic Design**, incluyendo la navegación por pestañas, el filtrado dinámico de resultados, las barras de progreso psicométrico y la consola de monitoreo en vivo.
-* **Lógica de Análisis y Psicometría:** Implementación de los algoritmos de extracción y conteo de `#hashtags`, clasificación automática de frecuencia de publicación y cálculo de puntajes del modelo psicométrico **Big Five (OCEAN)** junto con la asignación de arquetipos y afinidad comercial (*brand fit*).
-* **Auditoría Ejecutiva en Producción:** Integración del servicio `GeminiAuditService` en el backend para sintetizar métricas cuantitativas y rasgos psicológicos en informes estratégicos de diagnóstico, monetización y crecimiento.
+**VerifAI Scraper centraliza estos datos publicos en una auditoria automatizada y genera un diagnostico estrategico con indicadores, perfil psicometrico y recomendaciones concretas de crecimiento y monetizacion.**
 
+## Contenido
 
-## 1. Arquitectura Basada en Domain-Driven Design (DDD)
+- [Problema que resuelve](#problema-que-resuelve)
+- [Descripcion](#descripcion)
+- [Caracteristicas](#caracteristicas)
+- [Arquitectura](#arquitectura)
+- [Tecnologias](#tecnologias)
+- [Como ejecutar](#como-ejecutar)
+- [API principal](#api-principal)
+- [Flujo de analisis](#flujo-de-analisis)
+- [Investigacion y diseno](#investigacion-y-diseno)
+- [Equipo](#equipo)
+- [Uso responsable](#uso-responsable)
 
-El sistema separa la complejidad técnica del scraping y los modelos de IA de las reglas de negocio mediante **Contextos Delimitados (Bounded Contexts)**, garantizando que cada módulo hable un **Lenguaje Ubicuo** compartido entre el backend en Python y el cliente en React Native:
+## Descripcion
 
-| Contexto Delimitado (Bounded Context) | Responsabilidad de Negocio | Entidades y Objetos de Valor (Value Objects) | Implementación Técnica |
-| :--- | :--- | :--- | :--- |
-| **1. Ingesta y Extracción (`ScrapingContext`)** | Capturar datos públicos de TikTok evadiendo bloqueos antibot y reportando el estado de ejecución. | **Entidad:** `TargetProfile` (`@username`)<br>**Value Objects:** `ExtractionLimits` (`max_videos`, `max_comments`, `max_network`), `ExecutionLog` | Servidor Python (FastAPI) + Playwright Stealth conectado al cliente móvil en red local (LAN). |
-| **2. Analítica Cuantitativa (`MetricsContext`)** | Transformar métricas crudas en indicadores de rendimiento, alcance y constancia del creador. | **Entidad:** `ProfileSnapshot`<br>**Value Objects:** `EngagementRate`, `PublicationFrequency` (*Alta, Moderada, Pausada*), `HashtagRanking` | Procesamiento reactivo (`useMemo`) sobre el corpus de biografía, descripciones y comentarios. |
-| **3. Perfilamiento Psicométrico (`PsychometricsContext`)** | Evaluar la identidad comunicacional del creador y calcular su compatibilidad comercial con marcas. | **Entidad:** `OceanProfile`<br>**Value Objects:** `OceanScores` (5 dimensiones), `CreatorArchetype`, `BrandFit` (`% similarity`) | Proyección vectorial NLP y evaluación semántica de rasgos OCEAN + tono de comunidad. |
-| **4. Auditoría Ejecutiva IA (`AdvisoryContext`)** | Sintetizar métricas cuantitativas y psicométricas en un plan estratégico accionable. | **Entidad:** `ExecutiveAuditReport`<br>**Value Objects:** `ProfileDiagnosis`, `MonetizationStrategy`, `GrowthActionPlan` | Endpoint `POST /api/ai/gemini-report` impulsado por `GeminiAuditService`. |
+VerifAI Scraper es una plataforma academica que integra un backend en Python, una interfaz web y una aplicacion movil. Permite consultar perfiles publicos de TikTok y consolidar sus datos en un reporte ejecutivo de una sola pantalla.
 
+El sistema combina:
 
-## 2. Lógica de Negocio (4 Etapas Fundamentales)
+- Extraccion controlada de perfiles, videos, comentarios y relaciones publicas.
+- Analisis de engagement, frecuencia de publicacion y hashtags.
+- Perfilamiento semantico con el modelo Big Five (OCEAN).
+- Afinidad de nichos comerciales mediante embeddings.
+- Diagnostico, monetizacion y recomendaciones generadas con Google Gemini.
 
-1. **Extracción Automatizada de Datos (Playwright + Python):**
-   Desde la aplicación en React Native, el usuario ingresa el nombre de usuario objetivo y configura los límites cuantitativos de extracción (cantidad de videos, comentarios por video, seguidores y seguidos). El servidor en Python ejecuta Playwright en modo Stealth para capturar reproducciones, likes, porcentaje de engagement, comentarios y red de contactos, mostrando el avance dentro de la aplicación.
-2. **Análisis de Frecuencia y Posicionamiento de Hashtags:**
-   El sistema procesa el volumen de publicaciones extraídas para categorizar automáticamente la frecuencia del perfil (*Alta, Moderada o Pausada*) y contabiliza todos los `#hashtags` presentes en la biografía, descripciones de videos y comentarios.
-3. **Perfilamiento Psicométrico (Modelo Big Five - OCEAN):**
-   A partir del corpus textual recopilado (biografía, descripciones y comentarios de la audiencia), la aplicación evalúa los cinco rasgos del modelo OCEAN (*Apertura, Responsabilidad, Extraversión, Amabilidad y Estabilidad Emocional*). Con base en el rasgo dominante, asigna un arquetipo al creador, determina el tono general de la comunidad y calcula el porcentaje de afinidad (*fit*) con distintos sectores de marcas.
-4. **Diagnóstico Ejecutivo y Plan de Mejora:**
-   Consolida el rendimiento del perfil, su frecuencia de publicación y su perfil psicométrico para presentar un informe dividido en tres áreas clave: **Diagnóstico del Perfil**, **Estrategia de Monetización** y **Recomendación de Crecimiento**.
+## Caracteristicas
 
+| Area | Funcionalidades |
+| --- | --- |
+| Extraccion | Perfil objetivo, limite de videos y comentarios, red de seguidores y seguidos |
+| Analisis | Engagement, frecuencia de publicacion, ranking de hashtags y contenido destacado |
+| Inteligencia artificial | Arquetipo, cinco dimensiones OCEAN, afinidad con nichos y reporte ejecutivo |
+| Experiencia | Consola de progreso, visualizacion movil adaptable y filtros por secciones |
+| Arquitectura | FastAPI, WebSockets, DDD y componentes React/React Native |
 
-## 3. Metodología de Research (UX Research & Data Research)
+## Arquitectura
 
-El diseño funcional y estructural de **VerifAI Scraper** responde a una investigación previa en dos frentes:
+```mermaid
+flowchart LR
+    U[Usuario] --> W[Web React + Vite]
+    U --> M[App React Native + Expo]
+    W -->|REST / WebSocket| B[Backend FastAPI]
+    M -->|REST / WebSocket| B
+    B --> S[Servicio de scraping]
+    S --> T[Datos publicos de TikTok]
+    B --> P[Servicio psicometrico]
+    P --> E[Embeddings Big Five]
+    B --> G[Google Gemini]
+    G --> R[Reporte ejecutivo]
+```
 
-* **Investigación del Problema (Pain Points del Usuario):**
-  * **Hallazgo:** Los creadores de contenido y analistas de marketing revisan perfiles manualmente o dependen de métricas superficiales (solo número de seguidores), ignorando el *engagement* real, la frecuencia de publicación y la afinidad psicológica de la audiencia con las marcas.
-  * **Solución:** Consolidación de todo el flujo en una aplicación móvil de dos grandes vistas (**Extractor en Vivo** y **Resultados & IA**) que entrega un dictamen ejecutivo en menos de un minuto.
-* **Investigación Técnica y de Datos (Data & Stealth Research):**
-  * **Hallazgo:** Las peticiones HTTP tradicionales son bloqueadas inmediatamente por TikTok y la ausencia de retroalimentación durante extracciones largas genera incertidumbre en el usuario móvil.
-  * **Solución:** Implementación de **Playwright en modo Stealth** respaldado por una **terminal estilo DevTools** en la pantalla principal, validando al usuario que el motor está navegando y extrayendo datos activamente.
-* **Arquitectura de Información y Jerarquía Visual:**
-  * Se organizó la lectura bajo el principio de **divulgación progresiva (Progressive Disclosure)**: primero la configuración rápida con perfiles de prueba (`@khaby.lame`, `@mrbeast`, `@_iamnot_leo_`) y acordeón opcional de límites; luego un resumen ejecutivo superior (4 KPIs clave) seguido de 5 sub-pestañas especializadas (*Videos, Comentarios, Red, Hashtags, Big Five & IA*).
+### Contextos del sistema
 
+| Contexto | Responsabilidad |
+| --- | --- |
+| Ingesta y extraccion | Obtener datos publicos y comunicar el progreso de ejecucion |
+| Analitica cuantitativa | Calcular engagement, frecuencia y posicionamiento de hashtags |
+| Perfilamiento psicometrico | Determinar dimensiones OCEAN, arquetipo y afinidad comercial |
+| Auditoria ejecutiva | Sintetizar resultados en diagnostico, monetizacion y crecimiento |
 
-## 4. Arquitectura de Interfaz con Atomic Design
+## Tecnologias
 
-La aplicación móvil en React Native se construyó aplicando **Atomic Design** para garantizar reutilización de estilos, consistencia visual en pantallas pequeñas y escalabilidad de componentes:
+| Capa | Tecnologias |
+| --- | --- |
+| Backend | Python, FastAPI, Uvicorn, WebSockets, Playwright |
+| Inteligencia artificial | Sentence Transformers, NumPy, scikit-learn, Google Gemini |
+| Web | React 19, Vite, TailwindCSS, Lucide React |
+| Movil | React Native 0.88, Expo 58, Lucide React Native |
 
-* **Átomos (Atoms):** Elementos indivisibles de la interfaz como etiquetas tipográficas (`sectionLabel`, `navTitle`), insignias de estado (`antiBotBadge`, `durationBadge`), indicadores de estado de consola (`dotRed`, `dotYellow`, `dotGreen`), iconos vectoriales (`lucide-react-native`) e inputs base (`textInput`).
-* **Moléculas (Molecules):** Agrupaciones funcionales de átomos con un propósito único:
-  * Barra de entrada con prefijo (`inputContainer`: `@` + `TextInput`).
-  * Chips de perfiles rápidos (`profileChip`: `@username` + contador de seguidores).
-  * Celdas estadísticas (`statCell`: cifra destacada + etiqueta descriptiva).
-  * Barras de progreso psicométrico OCEAN (título del rasgo + porcentaje + barra de progreso + subtítulo descriptivo).
-* **Organismos (Organisms):** Bloques complejos e independientes de la aplicación:
-  * `TopNav` y `MainTabBar` (cabecera con estado de conexión LAN y navegación principal).
-  * `ExtractorPanel` (formulario completo con IP, objetivo, botón de acción y acordeón de límites).
-  * `PlaywrightTerminal` (consola de logs de ejecución).
-  * `ProfileBannerCard` (tarjeta superior con avatar, biografía y matriz de 4 métricas).
-  * `GeminiAuditCard` y `OceanDimensionsCard` (módulos de diagnóstico de IA y psicometría).
-* **Plantillas (Templates):** Estructura de disposición vertical (`SafeAreaView` + cabecera fija + `ScrollView` adaptable) que estandariza los márgenes (`padding: 14`), bordes redondeados (`borderRadius: 14` a `18`) y espaciado entre tarjetas.
-* **Páginas (Pages):** Las instancias finales con datos reales: **Extractor en Vivo** (`mainTab === "extractor"`) y **Resultados & IA** (`mainTab === "metrics"` con sus 5 sub-vistas).
+## Como ejecutar
 
+### Requisitos
 
-## 5. Psicología del Color Aplicada en VerifAI Scraper
+- Python 3.11
+- Node.js 20 o superior
+- Navegador o navegador usado por Playwright
+- API key de Google Gemini para habilitar la auditoria ejecutiva
 
-La paleta cromática de la interfaz (`Dark Mode` técnico de alto contraste) fue seleccionada intencionalmente para comunicar rigor analítico, velocidad tecnológica y diferenciación semántica entre módulos:
+### 1. Backend
 
-* **Azul Abisal / Negro Profundo (`#070b14` y `#020617` — Fondos Base y Consola):**
-  * **Psicología:** Reduce la fatiga visual en sesiones de auditoría prolongadas, proyecta sofisticación tecnológica (entorno de ciberseguridad/DevTools) y hace resaltar los datos numéricos y gráficos sin ruido visual.
-* **Azul Pizarra Oscuro (`#0e1422` — Contenedores y Tarjetas):**
-  * **Psicología:** Crea profundidad y jerarquía visual sutil mediante bordes `#1e293b`, delimitando cada contexto de datos sin recurrir a líneas agresivas.
-* **Rojo Coral / Carmesí TikTok (`#f43f5e` — Acción Principal y Marca):**
-  * **Psicología:** Genera urgencia, dinamismo y energía creativa; conecta visualmente con la identidad de TikTok y guía el ojo directamente hacia el CTA principal (**Scrapear Perfil Completo**) y las pestañas activas de extracción.
-* **Cian Eléctrico (`#38bdf8` y `#22d3ee` — Datos Técnicos y Auditoría Gemini):**
-  * **Psicología:** Transmite precisión, claridad analítica, inteligencia artificial y procesamiento de datos; se utiliza en handles (`@usuario`), vistas, hashtags, configuraciones de límites y en el módulo de **Google Gemini**.
-* **Verde Esmeralda (`#34d399` y `#10b981` — Validación, Stealth y Crecimiento):**
-  * **Psicología:** Comunica seguridad operativa (**Stealth Activo**), éxito en el *engagement*, frecuencia de publicación *Alta* y estrategias positivas de monetización.
-* **Púrpura / Violeta (`#7c3aed`, `#a855f7`, `#c084fc` — Psicometría Big Five OCEAN):**
-  * **Psicología:** Asociado históricamente con la cognición, el análisis profundo, la introspección y la inteligencia avanzada; diferencia claramente el análisis psicológico (**Big Five & IA**) de las métricas cuantitativas tradicionales.
-* **Ámbar / Dorado (`#fbbf24` y `#f59e0b` — Advertencias y Recomendaciones Estratégicas):**
-  * **Psicología:** Capta la atención preventiva en estados de frecuencia *Pausada*, alertas de consola y en las tarjetas de **Recomendación de Crecimiento** y **Fit de Marcas**.
+```bash
+cd backend
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+playwright install chromium
+```
 
+Crea `backend/.env`:
 
-## 6. Flujo Resumido del Sistema
+```env
+GOOGLE_API_KEY=tu_api_key
+```
 
-[Perfil Público de TikTok]
-       │
-       ▼  (ScrapingContext: Playwright Stealth)
-[Servidor Backend Python / FastAPI]
-       │
-       ▼  (MetricsContext + PsychometricsContext + AdvisoryContext)
-[Procesamiento de Métricas, Hashtags, Modelo OCEAN y Gemini AI]
-       │
-       ▼  (Atomic Design + Dark UI en React Native)
-[Aplicación Móvil VerifAI] ──► Visualización de Resultados y Plan de Mejora
+Inicia el servidor:
+
+```bash
+python main.py
+```
+
+La API queda disponible en `http://localhost:8000`. La documentacion interactiva se encuentra en `http://localhost:8000/docs`.
+
+### 2. Aplicacion web
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Por defecto, Vite mostrara la direccion local en la terminal.
+
+### 3. Aplicacion movil
+
+```bash
+cd mobile
+npm install
+npx expo start
+```
+
+La app movil requiere alcanzar el backend desde la misma red local. Usa la direccion IP que reporta `GET /api/info`.
+
+## API principal
+
+| Metodo | Ruta | Descripcion |
+| --- | --- | --- |
+| `GET` | `/api/info` | Obtiene la IP local y el puerto del servidor |
+| `POST` | `/api/scrape` | Ejecuta una extraccion y devuelve el analisis completo |
+| `POST` | `/api/analyze/big-five` | Recalcula el perfil psicometrico |
+| `POST` | `/api/ai/gemini-report` | Genera el reporte ejecutivo con Gemini |
+| `WebSocket` | `/ws/scrape` | Ejecuta la extraccion y transmite registros de progreso |
+
+## Flujo de analisis
+
+1. El usuario ingresa un perfil publico y configura los limites de extraccion.
+2. FastAPI inicia el flujo y publica el progreso mediante WebSocket.
+3. Playwright recopila perfil, videos, comentarios y relaciones publicas.
+4. El backend calcula engagement, frecuencia y ranking de hashtags.
+5. Sentence Transformers evalua el contenido contra los rasgos Big Five y nichos comerciales.
+6. Gemini transforma los datos cuantitativos en un reporte estrategico.
+7. La interfaz presenta los resultados en vistas especializadas.
+
+## Investigacion y diseno
+
+- **UX:** divulgacion progresiva con configuracion rapida, resumen ejecutivo y vistas detalladas.
+- **Atomic Design:** atomos, moleculas, organismos, plantillas y paginas.
+- **Interfaz:** modo oscuro de alto contraste inspirado en herramientas tecnicas y consolas DevTools.
+- **Semantica visual:** azul para datos tecnicos, coral para acciones, verde para validacion y crecimiento, violeta para psicometria y ambar para alertas.
+- **Diseño responsivo:** adaptado para navegador y dispositivos Android/iOS mediante Expo.
+
+## Equipo
+
+Proyecto desarrollado en la Universidad Central del Ecuador (UCE), Facultad de Ingenieria y Ciencias Aplicadas (FICA).
+
+- Xavier Monteros
+- Dereck Amacoria
+- Cristian Araujo
+- Ariel Guerron
+
+## Uso responsable
+
+Este proyecto debe utilizarse exclusivamente con perfiles publicos y fines academicos, respetando las condiciones de la plataforma, las normas de privacidad aplicables y los limites de uso de sus servicios. No almacenar datos personales innecesarios ni automatizar acciones masivas.
