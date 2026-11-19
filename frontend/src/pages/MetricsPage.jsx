@@ -471,13 +471,15 @@ export default function MetricsPage({ data }) {
               </p>
             ) : viewMode === "grid" ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4">
-                {filteredVideos.map((vid) => (
+                {filteredVideos.map((vid, idx) => (
                   <div
                     key={vid?.id || Math.random()}
                     className="group relative rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 aspect-[9/16] shadow-xl hover:border-slate-700 transition"
                   >
                     <img
                       src={vid?.thumbnail}
+                      loading={idx < 4 ? "eager" : "lazy"}
+                      decoding="async"
                       alt="Thumbnail video"
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                     />
@@ -525,13 +527,19 @@ export default function MetricsPage({ data }) {
               </div>
             ) : (
               <div className="space-y-2">
-                {filteredVideos.map((vid) => (
+                {filteredVideos.map((vid, idx) => (
                   <div
                     key={vid?.id || Math.random()}
                     className="flex items-center justify-between p-3 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-slate-700 transition"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <img src={vid?.thumbnail} alt="" className="w-10 h-14 rounded-lg object-cover shrink-0" />
+                      <img
+                        src={vid?.thumbnail}
+                        loading={idx < 4 ? "eager" : "lazy"}
+                        decoding="async"
+                        alt=""
+                        className="w-10 h-14 rounded-lg object-cover shrink-0"
+                      />
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-white">Video #{vid?.id}</p>
                         <p className="text-[11px] text-slate-400 truncate max-w-md">{vid?.desc || vid?.url}</p>
